@@ -8,7 +8,6 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Set;
 import java.util.UUID;
@@ -55,11 +54,35 @@ public class Main implements Callable<Integer> {
             final Set<UUID> ids = fromFailures
                     ? ObjectIdSource.readStatus(runDirectory.failurePath())
                     : ObjectIdSource.readInput(runDirectory.idsPath());
+            final int inputCount = ids.size();
             if (!fromFailures) {
                 ids.removeAll(progress);
             }
             log.info("{} run initialized in {} with {} object IDs", runDirectory.resumed() ? "Resumed" : "New",
                     runDirectory.path(), ids.size());
+            final StatusWriter statusWriter = new StatusWriter(runDirectory.progressPath(), runDirectory.failurePath());
+            try (ObjectMigrationService service = new ObjectMigrationService(runDirectory.config(), runDirectory.path())) {
+                final MigrationCoordinator coordinator = new MigrationCoordinator(runDirectory.config(), statusWriter,
+                        service, fromFailures);
+                final Thread shutdownHook = new Thread(coordinator::stop, "migration-shutdown");
+                Runtime.getRuntime().addShutdownHook(shutdownHook);
+                final MigrationCoordinator.MigrationSummary summary;
+                try {
+                    summary = coordinator.run(ids, inputCount, inputCount - ids.size());
+                } finally {
+                    try {
+                        Runtime.getRuntime().removeShutdownHook(shutdownHook);
+                    } catch (IllegalStateException ignored) {
+                        // The JVM is already shutting down and the hook owns coordinator shutdown.
+                    }
+                }
+                log.info("Migration summary: input={}, skipped={}, attempted={}, succeeded={}, failed={}, interrupted={}",
+                        summary.input(), summary.skipped(), summary.attempted(), summary.succeeded(), summary.failed(),
+                        summary.interrupted());
+                if (summary.aborted() || !ObjectIdSource.readStatus(runDirectory.failurePath()).isEmpty()) {
+                    return 1;
+                }
+            }
         }
         return 0;
     }

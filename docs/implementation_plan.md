@@ -33,7 +33,7 @@ narrow service interfaces rather than a dependency-injection framework.
 - If an OCFL object existed before an attempt, retain it when sideloading
   returns 4xx. Delete on 4xx only when the current attempt promoted the object.
 - Validate every promotion copy by comparing relative paths, file sizes, and
-  SHA-256 hashes. Do not add repository-wide OCFL validation to the copy path.
+  SHA-1 hashes. Do not add repository-wide OCFL validation to the copy path.
 - Preserve the documented exporter behavior: ACL and historical-version export
   remain disabled because the source invocation does not enable them. The
   migration includes current RDF, binaries, and audit output.
@@ -398,8 +398,8 @@ extension configuration.
    `Files.move`. If final-directory creation reports that it now exists, treat
    it as the collision described in step 2. Multiple migration JVMs sharing
    roots are unsupported.
-5. Compare source and final-copy relative regular-file paths and sizes. Reject
-   symlinks and unexpected non-regular entries.
+5. Compare source and final-copy relative regular-file paths, sizes, and SHA-1
+   hashes. Reject symlinks and unexpected non-regular entries.
 6. Remove the staging source only after copy validation succeeds.
 
 Record whether this attempt created the final object directory. On copy or copy

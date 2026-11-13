@@ -22,7 +22,7 @@ class MainTest {
         final Path ocflRoot = Files.createDirectory(tempDir.resolve("ocfl"));
         final Path ids = tempDir.resolve("ids.txt");
         final Path config = tempDir.resolve("config.properties");
-        Files.writeString(ids, "3f7510bc-7f53-4ae2-b8fc-0fb4ccd95dbb\n");
+        Files.writeString(ids, "");
         Files.writeString(config, properties(ocflRoot));
 
         final int exitCode = new CommandLine(new Main()).execute(

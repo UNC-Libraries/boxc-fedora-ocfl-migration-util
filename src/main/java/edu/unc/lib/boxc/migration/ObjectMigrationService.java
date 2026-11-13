@@ -11,7 +11,7 @@ import java.util.UUID;
 /**
  * Performs the complete export, upgrade, promotion, and target verification for one object.
  */
-final class ObjectMigrationService implements AutoCloseable {
+final class ObjectMigrationService implements AutoCloseable, MigrationAttempt {
     private static final Logger log = LoggerFactory.getLogger(ObjectMigrationService.class);
 
     private final MigrationConfig config;
@@ -44,7 +44,8 @@ final class ObjectMigrationService implements AutoCloseable {
     }
 
     /** Runs one complete object attempt and reports its terminal result. */
-    MigrationResult migrate(final UUID id) {
+    @Override
+    public MigrationResult migrate(final UUID id) {
         final ObjectIdentity identity = ObjectIdentity.from(id, config.fedora5BaseUri(), config.fedora6BaseUri());
         Path exportDirectory = null;
         OcflPromoter.Promotion promotion = null;
@@ -120,6 +121,9 @@ final class ObjectMigrationService implements AutoCloseable {
 
     private MigrationResult failure(final UUID id, final MigrationResult.FailureStage stage, final Exception exception,
                                     final boolean placedLiveObject) {
+        if (exception instanceof InterruptedException) {
+            Thread.currentThread().interrupt();
+        }
         log.error("Migration failed for {} at {}", id, stage, exception);
         return new MigrationResult(id, false, stage, exception.getMessage(), placedLiveObject);
     }
