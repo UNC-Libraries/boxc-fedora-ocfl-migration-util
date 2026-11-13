@@ -13,19 +13,19 @@
         <project.java.source>21</project.java.source>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <compiler.plugin.version>3.16.0</compiler.plugin.version>
-        <surefire.plugin.version>3.6.0</surefire.plugin.version>
+        <surefire.plugin.version>3.6.1</surefire.plugin.version>
         <shade.plugin.version>3.6.2</shade.plugin.version>
         <picocli.version>4.7.7</picocli.version>
         <slf4j.version>2.0.20</slf4j.version>
-        <logback.version>1.6.4</logback.version>
+        <logback.version>1.6.6</logback.version>
         <httpclient.version>4.5.14</httpclient.version>
         <bagit.version>5.2.0</bagit.version>
-        <commons-codec.version>1.22.1</commons-codec.version>
+        <commons-codec.version>1.23.0</commons-codec.version>
         <commons-compress.version>1.28.0</commons-compress.version>
-        <tika.version>4.0.0</tika.version>
-        <jackson.version>2.22.3</jackson.version>
+        <tika.version>4.2.0</tika.version>
+        <jackson.version>2.23.0</jackson.version>
         <jena.version>6.2.0</jena.version>
-        <commons-lang3.version>3.21.0</commons-lang3.version>
+        <commons-lang3.version>3.22.0</commons-lang3.version>
         <fcrepo-java-client.version>7.0.0</fcrepo-java-client.version>
         <fcrepo-storage-ocfl.version>7.0.0</fcrepo-storage-ocfl.version>
         <ocfl-java.version>2.2.3</ocfl-java.version>
