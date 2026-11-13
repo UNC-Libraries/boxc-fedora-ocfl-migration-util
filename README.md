@@ -28,3 +28,25 @@ run as part of the command.
 
 The import/export fork and this application force
 `org.fcrepo.client:fcrepo-java-client:7.0.0`.
+
+## Run Configuration
+
+Initialize a run with `--id-list-path` and `--config-path`; later invocations
+of the same working directory resume from its copied inputs. The configuration
+file contains the live OCFL root and Fedora credentials:
+
+```properties
+fedora_ocfl_root_dir=/srv/fedora/ocfl-root
+fedora_5_base_uri=http://localhost:8181/fcrepo/rest
+fedora_5_username=source-user
+fedora_5_password=REDACTED
+fedora_6_base_uri=http://localhost:8185/fcrepo/rest
+fedora_6_username=target-user
+fedora_6_password=REDACTED
+worker_count=1
+shutdown_timeout_seconds=300
+```
+
+The live OCFL root must already be a writable directory. The run directory
+contains the copied inputs, status logs, lock, and future export/upgrade
+workspace; do not edit those files while a run is active.

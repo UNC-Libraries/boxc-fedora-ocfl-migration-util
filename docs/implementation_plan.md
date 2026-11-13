@@ -26,8 +26,8 @@ narrow service interfaces rather than a dependency-injection framework.
   published image is not available.
 - An existing run resumes only from the ID list and properties copied into its
   working directory. Reject new `--id-list-path` and `--config-path` values on
-  resume. `--worker-count` remains an allowed explicit override and is written
-  back to the run's properties copy.
+  resume. `--worker-count` remains an allowed explicit override for that
+  invocation and does not modify the run's properties copy.
 - Provide a direct CLI override only for `worker_count`. Fedora URIs,
   credentials, and the live OCFL root remain properties-file settings.
 - If an OCFL object existed before an attempt, retain it when sideloading
@@ -111,8 +111,8 @@ CLI options:
 - `--working-dir=<path>` defaults to the current directory.
 - `--id-list-path=<path>` is required only when initializing a run.
 - `--config-path=<path>` is required only when initializing a run.
-- `--worker-count=<positive integer>` overrides and updates the copied
-  `worker_count` value for a new or resumed run.
+- `--worker-count=<positive integer>` overrides `worker_count` for the current
+  invocation without modifying the copied properties file.
 - `--from-failures` is a resumed-run mode that uses
   `migration_failure.log` as the ID source. It is mutually exclusive with
   `--id-list-path` and bypasses normal progress-log skipping so prior failures
@@ -241,12 +241,11 @@ has only the root command.
 3. Determine whether it is a new run by checking for both authoritative copied
    inputs. Do not infer resume solely from empty status logs.
 4. For a new run, require readable source paths, copy them to temporary sibling
-   files, validate the copies, apply `--worker-count`, then atomically rename
-   them to their stable names.
+   files, validate the copies, then atomically rename them to their stable names.
 5. For a resumed run, reject `--id-list-path` and `--config-path`; load only the
    stable copies. `--from-failures` is valid only for a resumed run and selects
-   its failure log instead of `migration_ids.txt`. Apply and persist
-   `--worker-count` if present.
+   its failure log instead of `migration_ids.txt`. Apply `--worker-count` to
+   that invocation if present.
 6. Create missing status files and directories. Do not truncate existing logs.
 7. Read status files strictly as UUID-per-line files. Permit duplicate status
    entries defensively by loading them into sets, but never deliberately append
@@ -295,7 +294,7 @@ terminal result; normal resume or `--from-failures` will retry it.
 ### Phase 2 tests and review
 
 Add tests for new-run copying, resume, conflicting resume options, worker-count
-override persistence, partial initialization, defaults, invalid properties,
+override non-persistence, partial initialization, defaults, invalid properties,
 invalid UUIDs, blank lines, case normalization, deduplication, progress skips,
 strict status parsing, write ordering, flush/write failures, and POSIX-permission
 fallback. Test missing, non-directory, and non-writable live roots plus
