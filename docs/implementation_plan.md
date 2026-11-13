@@ -335,8 +335,8 @@ under both OCFL roots as:
 
 For the example, the digest begins `b9d61f147...`, matching
 `b9d/61f/147/b9d61f147...`. Centralize and unit-test this calculation. Before
-promotion, require the expected staged directory and verify its
-`inventory.json` identifies the expected OCFL object ID. Do not locate objects
+promotion, require the expected staged directory and verify its mutable-HEAD
+`extensions/0005-mutable-head/head/inventory.json` identifies the expected OCFL object ID. Do not locate objects
 by selecting an arbitrary new directory from the staging root.
 
 ### Export adapter

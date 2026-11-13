@@ -27,6 +27,11 @@ final class RunDirectory implements AutoCloseable {
     static final String PROGRESS_FILE = "migration_progress.log";
     static final String FAILURE_FILE = "migration_failure.log";
     static final String LOG_FILE = "migration.log";
+    static final String EXPORTS_DIRECTORY = "exports";
+    static final String UPGRADE_DIRECTORY = "upgrade";
+    static final String UPGRADE_OCFL_ROOT_DIRECTORY = "upgrade/data/ocfl-root";
+    static final String UPGRADE_OCFL_TEMP_DIRECTORY = "upgrade/data/ocfl-temp";
+    static final String UPGRADE_STAGING_DIRECTORY = "upgrade/data/staging";
 
     private static final Set<PosixFilePermission> CONFIG_PERMISSIONS = Set.of(
             PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE,
@@ -149,10 +154,10 @@ final class RunDirectory implements AutoCloseable {
     }
 
     private void createStatusFiles() throws IOException {
-        Files.createDirectories(path.resolve("exports"));
-        Files.createDirectories(path.resolve("upgrade/data/ocfl-root"));
-        Files.createDirectories(path.resolve("upgrade/data/ocfl-temp"));
-        Files.createDirectories(path.resolve("upgrade/data/staging"));
+        Files.createDirectories(path.resolve(EXPORTS_DIRECTORY));
+        Files.createDirectories(path.resolve(UPGRADE_OCFL_ROOT_DIRECTORY));
+        Files.createDirectories(path.resolve(UPGRADE_OCFL_TEMP_DIRECTORY));
+        Files.createDirectories(path.resolve(UPGRADE_STAGING_DIRECTORY));
         createProtectedFile(progressPath);
         createProtectedFile(failurePath);
     }
