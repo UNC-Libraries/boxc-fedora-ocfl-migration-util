@@ -44,6 +44,7 @@ class FedoraMigrationIT {
     private static final URI FEDORA_7 = URI.create("http://localhost:48087/fcrepo/rest");
     private static final String USERNAME = "fedoraAdmin";
     private static final String PASSWORD = "fedoraAdmin";
+    private static final boolean FEDORA_MANAGED_EXTERNALLY = Boolean.getBoolean("fedora.managed.externally");
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
@@ -52,13 +53,15 @@ class FedoraMigrationIT {
     @BeforeAll
     void startFedora() throws Exception {
         fixtureRoot = resourcePath("fcrepo");
-        compose("down", "--volumes", "--remove-orphans");
-        deleteTree(STORAGE_ROOT);
-        Files.createDirectories(STORAGE_ROOT.resolve("fedora7/ocfl"));
-        Files.createDirectories(STORAGE_ROOT.resolve("fedora7/staging"));
-        Files.createDirectories(STORAGE_ROOT.resolve("fedora7/temp"));
-        copyTree(resourcePath("external_binaries"), STORAGE_ROOT);
-        compose("up", "--detach", "--force-recreate");
+        if (!FEDORA_MANAGED_EXTERNALLY) {
+            compose("down", "--volumes", "--remove-orphans");
+            deleteTree(STORAGE_ROOT);
+            Files.createDirectories(STORAGE_ROOT.resolve("fedora7/ocfl"));
+            Files.createDirectories(STORAGE_ROOT.resolve("fedora7/staging"));
+            Files.createDirectories(STORAGE_ROOT.resolve("fedora7/temp"));
+            copyTree(resourcePath("external_binaries"), STORAGE_ROOT);
+            compose("up", "--detach", "--force-recreate");
+        }
         waitForFedora(FEDORA_5);
         waitForFedora(FEDORA_7);
         createContentRoot();
@@ -66,8 +69,10 @@ class FedoraMigrationIT {
 
     @AfterAll
     void stopFedora() throws Exception {
-//        compose("down", "--volumes", "--remove-orphans");
-//        deleteTree(STORAGE_ROOT);
+        if (!FEDORA_MANAGED_EXTERNALLY) {
+            compose("down", "--volumes", "--remove-orphans");
+            deleteTree(STORAGE_ROOT);
+        }
     }
 
     @Test
@@ -186,7 +191,9 @@ class FedoraMigrationIT {
             }
             Thread.sleep(1_000);
         }
-        compose("logs", "--no-color");
+        if (!FEDORA_MANAGED_EXTERNALLY) {
+            compose("logs", "--no-color");
+        }
         throw new IllegalStateException("Timed out waiting for Fedora at " + baseUri);
     }
 
