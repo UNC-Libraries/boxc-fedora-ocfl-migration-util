@@ -21,7 +21,7 @@ jobs:
       - name: Checkout custom fcrepo-import-export
         uses: actions/checkout@v6
         with:
-          repository: unclib/fcrepo-import-export
+          repository: UNC-Libraries/fcrepo-import-export
           ref: expose-api
           path: fcrepo-import-export
 
