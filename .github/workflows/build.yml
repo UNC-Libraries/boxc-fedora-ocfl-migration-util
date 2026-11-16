@@ -18,6 +18,28 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Checkout custom fcrepo-import-export
+        uses: actions/checkout@v6
+        with:
+          repository: unclib/fcrepo-import-export
+          ref: expose-api
+          path: fcrepo-import-export
+
+      - name: Install custom fcrepo-import-export
+        run: mvn --batch-mode --update-snapshots -DskipTests install
+        working-directory: fcrepo-import-export
+
+      - name: Checkout custom fcrepo-upgrade-utils
+        uses: actions/checkout@v6
+        with:
+          repository: fcrepo-exts/fcrepo-upgrade-utils
+          ref: fcrepo-4116
+          path: fcrepo-upgrade-utils
+
+      - name: Install custom fcrepo-upgrade-utils
+        run: mvn --batch-mode --update-snapshots -DskipTests install
+        working-directory: fcrepo-upgrade-utils
+
       - name: Prepare Fedora storage
         run: |
           sudo mkdir -p /tmp/boxc_migration_storage/fedora7/{ocfl,staging,temp}
