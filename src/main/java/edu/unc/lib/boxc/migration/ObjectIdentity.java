@@ -24,8 +24,13 @@ record ObjectIdentity(UUID id, String fedoraPath, String internalId, URI sourceU
         final String fedoraPath = "content/" + value.substring(0, 2) + "/" + value.substring(2, 4) + "/"
                 + value.substring(4, 6) + "/" + value.substring(6, 8) + "/" + value;
         final String internalId = "info:fedora/" + fedoraPath;
-        return new ObjectIdentity(id, fedoraPath, internalId, sourceBaseUri.resolve(fedoraPath),
-                targetBaseUri.resolve(fedoraPath), DigestUtils.sha256Hex(internalId));
+        return new ObjectIdentity(id, fedoraPath, internalId, resolveRepositoryPath(sourceBaseUri, fedoraPath),
+                resolveRepositoryPath(targetBaseUri, fedoraPath), DigestUtils.sha256Hex(internalId));
+    }
+
+    private static URI resolveRepositoryPath(final URI repositoryBaseUri, final String path) {
+        final String base = repositoryBaseUri.toString();
+        return URI.create(base.endsWith("/") ? base : base + "/").resolve(path);
     }
 
     /** Resolves this object's Hashed N-Tuple layout directory below an OCFL root. */
@@ -34,8 +39,8 @@ record ObjectIdentity(UUID id, String fedoraPath, String internalId, URI sourceU
                 .resolve(ocflDigest.substring(6, 9)).resolve(ocflDigest);
     }
 
-    /** Returns the internal Fedora identifier through this object's parent hash segment. */
+    /** Returns the Fedora content root that contains migrated archival groups. */
     String parentInternalId() {
-        return internalId.substring(0, internalId.lastIndexOf('/'));
+        return "info:fedora/content";
     }
 }

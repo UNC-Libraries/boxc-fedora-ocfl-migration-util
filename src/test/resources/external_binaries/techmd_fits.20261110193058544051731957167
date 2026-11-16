@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<premis3:premis xmlns:premis3="http://www.loc.gov/premis/v3">
+  <premis3:object xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="premis3:file">
+    <premis3:objectCharacteristics>
+      <premis3:compositionLevel>0</premis3:compositionLevel>
+      <premis3:format>
+        <premis3:formatDesignation>
+          <premis3:formatName>Portable Network Graphics</premis3:formatName>
+        </premis3:formatDesignation>
+      </premis3:format>
+      <premis3:size>16026</premis3:size>
+      <premis3:objectCharacteristicsExtension>
+        <fits xmlns="http://hul.harvard.edu/ois/xml/ns/fits/fits_output" xsi:schemaLocation="http://hul.harvard.edu/ois/xml/ns/fits/fits_output http://hul.harvard.edu/ois/xml/xsd/fits/fits_output.xsd" version="1.6.0" timestamp="11/10/26, 2:30 PM">
+          <identification status="CONFLICT">
+            <identity format="Portable Network Graphics" mimetype="image/png" toolname="FITS" toolversion="1.6.0">
+              <tool toolname="Droid" toolversion="6.5.2" />
+              <tool toolname="Exiftool" toolversion="12.50" />
+              <tool toolname="Tika" toolversion="2.6.0" />
+              <version toolname="Droid" toolversion="6.5.2">1.0</version>
+              <externalIdentifier toolname="Droid" toolversion="6.5.2" type="puid">fmt/11</externalIdentifier>
+            </identity>
+            <identity format="symbolic link to /opt/data/test_staging/a_tiny_bag/data/boxy.png" mimetype="inode/symlink" toolname="FITS" toolversion="1.6.0">
+              <tool toolname="file utility" toolversion="5.39" />
+            </identity>
+          </identification>
+          <fileinfo>
+            <filepath toolname="OIS File Information" toolversion="1.0" status="SINGLE_RESULT">/opt/data/deposits/ab10cc4a-f78d-4593-859f-899b8f77c0c0/fits_staging13048809289638234057/boxy.png</filepath>
+            <filename toolname="OIS File Information" toolversion="1.0" status="SINGLE_RESULT">boxy.png</filename>
+            <size toolname="OIS File Information" toolversion="1.0">16026</size>
+            <md5checksum toolname="OIS File Information" toolversion="1.0" status="SINGLE_RESULT">d9c1d179f30be3a973e95152bf422320</md5checksum>
+            <fslastmodified toolname="OIS File Information" toolversion="1.0" status="SINGLE_RESULT">1568121720786</fslastmodified>
+          </fileinfo>
+          <filestatus />
+          <metadata>
+            <image>
+              <compressionScheme toolname="Exiftool" toolversion="12.50" status="CONFLICT">Deflate/Inflate</compressionScheme>
+              <compressionScheme toolname="Tika" toolversion="2.6.0" status="CONFLICT">Deflate</compressionScheme>
+              <imageWidth toolname="Exiftool" toolversion="12.50">160</imageWidth>
+              <imageHeight toolname="Exiftool" toolversion="12.50">160</imageHeight>
+              <orientation toolname="Tika" toolversion="2.6.0" status="SINGLE_RESULT">normal*</orientation>
+              <scanningSoftwareName toolname="Exiftool" toolversion="12.50" status="SINGLE_RESULT">Adobe ImageReady</scanningSoftwareName>
+              <standard>
+                <mix:mix xmlns:mix="http://www.loc.gov/mix/v20">
+                  <mix:BasicDigitalObjectInformation>
+                    <mix:Compression>
+                      <mix:compressionScheme>Deflate/Inflate</mix:compressionScheme>
+                    </mix:Compression>
+                  </mix:BasicDigitalObjectInformation>
+                  <mix:BasicImageInformation>
+                    <mix:BasicImageCharacteristics>
+                      <mix:imageWidth>160</mix:imageWidth>
+                      <mix:imageHeight>160</mix:imageHeight>
+                      <mix:PhotometricInterpretation />
+                    </mix:BasicImageCharacteristics>
+                  </mix:BasicImageInformation>
+                  <mix:ImageCaptureMetadata>
+                    <mix:GeneralCaptureInformation />
+                    <mix:ScannerCapture>
+                      <mix:ScanningSystemSoftware>
+                        <mix:scanningSoftwareName>Adobe ImageReady</mix:scanningSoftwareName>
+                      </mix:ScanningSystemSoftware>
+                    </mix:ScannerCapture>
+                    <mix:orientation>normal*</mix:orientation>
+                  </mix:ImageCaptureMetadata>
+                  <mix:ImageAssessmentMetadata>
+                    <mix:SpatialMetrics />
+                    <mix:ImageColorEncoding />
+                  </mix:ImageAssessmentMetadata>
+                </mix:mix>
+              </standard>
+            </image>
+          </metadata>
+          <statistics fitsExecutionTime="174">
+            <tool toolname="MediaInfo" toolversion="23.09" status="did not run" />
+            <tool toolname="OIS Audio Information" toolversion="0.1" status="did not run" />
+            <tool toolname="ADL Tool" toolversion="0.1" status="did not run" />
+            <tool toolname="VTT Tool" toolversion="0.1" status="did not run" />
+            <tool toolname="Droid" toolversion="6.5.2" executionTime="19" />
+            <tool toolname="jpylyzer" toolversion="2.1.0" status="did not run" />
+            <tool toolname="embARC" toolversion="0.2" status="did not run" />
+            <tool toolname="file utility" toolversion="5.39" executionTime="49" />
+            <tool toolname="Exiftool" toolversion="12.50" executionTime="161" />
+            <tool toolname="NLNZ Metadata Extractor" toolversion="3.6GA" status="did not run" />
+            <tool toolname="OIS File Information" toolversion="1.0" executionTime="9" />
+            <tool toolname="OIS XML Metadata" toolversion="0.2" status="did not run" />
+            <tool toolname="Tika" toolversion="2.6.0" executionTime="132" />
+          </statistics>
+        </fits>
+      </premis3:objectCharacteristicsExtension>
+    </premis3:objectCharacteristics>
+    <premis3:objectIdentifier>
+      <premis3:objectIdentifierType>Fedora Datastream PID</premis3:objectIdentifierType>
+      <premis3:objectIdentifierValue>http://dcr-test-bes.libint.unc.edu:8181/fcrepo/rest/content/3e/30/8d/9c/3e308d9c-347c-445c-81f1-72e183117afb</premis3:objectIdentifierValue>
+    </premis3:objectIdentifier>
+  </premis3:object>
+</premis3:premis>
