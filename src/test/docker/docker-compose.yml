@@ -22,6 +22,7 @@ services:
       - ./allowed-external-content.txt:/config/allowed-external-content.txt:ro
     environment:
       CATALINA_OPTS: >-
+        -XX:-UseContainerSupport
         -Dfcrepo.external.content.allowed=/config/allowed-external-content.txt
 
   fcrepo7:
