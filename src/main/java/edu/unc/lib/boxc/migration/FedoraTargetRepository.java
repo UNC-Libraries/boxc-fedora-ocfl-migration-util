@@ -11,6 +11,8 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +23,7 @@ import java.nio.charset.StandardCharsets;
  * Pooled authenticated HTTP client for target Fedora sideloading and verification.
  */
 final class FedoraTargetRepository implements TargetRepository {
+    private static final Logger log = LoggerFactory.getLogger(FedoraTargetRepository.class);
     private static final int BODY_LIMIT = 1024;
     private final CloseableHttpClient client;
 
@@ -84,7 +87,7 @@ final class FedoraTargetRepository implements TargetRepository {
         }
     }
 
-    private static String responseDetail(final HttpEntity entity) throws IOException {
+    private static String responseDetail(final HttpEntity entity) {
         if (entity == null) {
             return "";
         }
@@ -93,6 +96,9 @@ final class FedoraTargetRepository implements TargetRepository {
             final boolean truncated = bytes.length > BODY_LIMIT;
             return ": " + new String(bytes, 0, Math.min(bytes.length, BODY_LIMIT), StandardCharsets.UTF_8)
                     + (truncated ? "..." : "");
+        } catch (IOException e) {
+            log.warn("Could not read HTTP error response body", e);
+            return "";
         }
     }
 }

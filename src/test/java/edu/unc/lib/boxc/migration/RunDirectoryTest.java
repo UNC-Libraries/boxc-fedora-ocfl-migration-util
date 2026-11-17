@@ -66,6 +66,22 @@ class RunDirectoryTest {
     }
 
     @Test
+    void leavesNoAuthoritativeInputsWhenIdValidationFails() throws Exception {
+        final Path ids = writeIds();
+        Files.writeString(ids, "not-a-uuid\n");
+        final Path run = tempDir.resolve("run");
+
+        assertThrows(IllegalArgumentException.class, () -> RunDirectory.open(run, ids, writeConfig(), null, false));
+        assertFalse(Files.exists(run.resolve(RunDirectory.PROPERTIES_FILE)));
+        assertFalse(Files.exists(run.resolve(RunDirectory.IDS_FILE)));
+
+        Files.writeString(ids, "3f7510bc-7f53-4ae2-b8fc-0fb4ccd95dbb\n");
+        try (var runDirectory = RunDirectory.open(run, ids, writeConfig(), null, false)) {
+            assertFalse(runDirectory.resumed());
+        }
+    }
+
+    @Test
     void rejectsInvalidLiveOcflRootAndInconsistentStatus() throws Exception {
         final Path config = writeConfig();
         Files.writeString(config, properties(tempDir.resolve("missing")));

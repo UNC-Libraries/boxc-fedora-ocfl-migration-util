@@ -14,6 +14,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MigrationCoordinatorTest {
@@ -65,6 +66,39 @@ class MigrationCoordinatorTest {
 
         assertEquals(1, summary.succeeded());
         assertEquals("", Files.readString(failures));
+    }
+
+    @Test
+    void blocksSubmissionUntilBoundedQueueCapacityIsAvailable() throws Exception {
+        final Path progress = Files.createFile(tempDir.resolve("progress.log"));
+        final Path failures = Files.createFile(tempDir.resolve("failures.log"));
+        final List<UUID> ids = List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        final CountDownLatch started = new CountDownLatch(1);
+        final CountDownLatch release = new CountDownLatch(1);
+        final MigrationAttempt attempt = id -> {
+            if (id.equals(ids.getFirst())) {
+                started.countDown();
+                try {
+                    release.await();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            return new MigrationResult(id, true, null, "ok", false);
+        };
+
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            final Future<MigrationCoordinator.MigrationSummary> result = executor.submit(() -> new MigrationCoordinator(config(1),
+                    new StatusWriter(progress, failures), attempt, false).run(ids, ids.size(), 0));
+            started.await();
+            assertFalse(result.isDone());
+            release.countDown();
+
+            final MigrationCoordinator.MigrationSummary summary = result.get();
+            assertEquals(4, summary.attempted());
+            assertEquals(4, summary.succeeded());
+            assertEquals(0, summary.interrupted());
+        }
     }
 
     @Test
