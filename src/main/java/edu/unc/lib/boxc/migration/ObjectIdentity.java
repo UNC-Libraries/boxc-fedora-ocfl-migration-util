@@ -46,7 +46,12 @@ record ObjectIdentity(UUID id, String fedoraPath, String internalId, URI sourceU
                 .resolve(ocflDigest.substring(6, 9)).resolve(ocflDigest);
     }
 
-    /** Returns the Fedora container root that contains the migrated object. */
+    /**
+     * Returns the Fedora container root that contains the migrated object.
+     *
+     * The UUID hash segments route requests but are not Fedora parent resources. Using this root preserves direct
+     * {@code ldp:contains} membership under {@code content} or {@code deposits} when the object is sideloaded.
+     */
     String parentInternalId() {
         return internalId.substring(0, internalId.indexOf('/', "info:fedora/".length()));
     }
