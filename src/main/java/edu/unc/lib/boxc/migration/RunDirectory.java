@@ -26,7 +26,6 @@ final class RunDirectory implements AutoCloseable {
     static final String IDS_FILE = "migration_ids.txt";
     static final String PROGRESS_FILE = "migration_progress.log";
     static final String FAILURE_FILE = "migration_failure.log";
-    static final String LOG_FILE = "migration.log";
     static final String EXPORTS_DIRECTORY = "exports";
     static final String UPGRADE_DIRECTORY = "upgrade";
     static final String UPGRADE_OCFL_ROOT_DIRECTORY = "upgrade/data/ocfl-root";
@@ -102,8 +101,7 @@ final class RunDirectory implements AutoCloseable {
                 }
                 requireReadable(sourceIds, "--id-list-path");
                 requireReadable(sourceConfig, "--config-path");
-                copyAndValidate(sourceConfig, propertiesPath, true);
-                copyAndValidate(sourceIds, idsPath, false);
+                initializeInputs(sourceConfig, propertiesPath, sourceIds, idsPath);
             }
 
             MigrationConfig config = MigrationConfig.load(propertiesPath);
@@ -128,7 +126,7 @@ final class RunDirectory implements AutoCloseable {
         }
     }
 
-    private static void copyAndValidate(final Path source, final Path target, final boolean config) throws IOException {
+    private static Path copyAndValidate(final Path source, final Path target, final boolean config) throws IOException {
         final Path temporary = Files.createTempFile(target.getParent(), target.getFileName().toString(), ".tmp");
         try {
             Files.copy(source, temporary, StandardCopyOption.REPLACE_EXISTING);
@@ -137,10 +135,38 @@ final class RunDirectory implements AutoCloseable {
             } else {
                 ObjectIdSource.readInput(temporary);
             }
-            atomicMove(temporary, target);
-            setPermissions(target, config ? CONFIG_PERMISSIONS : LOG_PERMISSIONS);
-        } finally {
+            return temporary;
+        } catch (IOException | RuntimeException e) {
             Files.deleteIfExists(temporary);
+            throw e;
+        }
+    }
+
+    // Setup input files atomically, cleaning up if there are any issues rather than leaving a broken directory.
+    private static void initializeInputs(final Path sourceConfig, final Path propertiesPath, final Path sourceIds,
+                                         final Path idsPath) throws IOException {
+        Path temporaryProperties = null;
+        Path temporaryIds = null;
+        try {
+            temporaryProperties = copyAndValidate(sourceConfig, propertiesPath, true);
+            temporaryIds = copyAndValidate(sourceIds, idsPath, false);
+            atomicMove(temporaryProperties, propertiesPath);
+            temporaryProperties = null;
+            atomicMove(temporaryIds, idsPath);
+            temporaryIds = null;
+            setPermissions(propertiesPath, CONFIG_PERMISSIONS);
+            setPermissions(idsPath, LOG_PERMISSIONS);
+        } catch (IOException | RuntimeException e) {
+            Files.deleteIfExists(propertiesPath);
+            Files.deleteIfExists(idsPath);
+            throw e;
+        } finally {
+            if (temporaryProperties != null) {
+                Files.deleteIfExists(temporaryProperties);
+            }
+            if (temporaryIds != null) {
+                Files.deleteIfExists(temporaryIds);
+            }
         }
     }
 

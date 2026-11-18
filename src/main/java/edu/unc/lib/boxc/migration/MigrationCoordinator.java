@@ -8,7 +8,7 @@ import java.time.Duration;
 import java.util.Collection;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,7 +20,6 @@ final class MigrationCoordinator {
     private static final Logger log = LoggerFactory.getLogger(MigrationCoordinator.class);
 
     private final ThreadPoolExecutor executor;
-    private final Semaphore capacity;
     private final StatusWriter statusWriter;
     private final MigrationAttempt migration;
     private final boolean retry;
@@ -38,8 +37,22 @@ final class MigrationCoordinator {
                          final boolean retry) {
         final int queueSize = Math.max(1, config.workerCount() * 2);
         executor = new ThreadPoolExecutor(config.workerCount(), config.workerCount(), 0, TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>(queueSize), new ThreadPoolExecutor.AbortPolicy());
-        capacity = new Semaphore(config.workerCount() + queueSize);
+                new ArrayBlockingQueue<>(queueSize), (task, rejectedExecutor) -> {
+                    if (rejectedExecutor.isShutdown()) {
+                        throw new RejectedExecutionException("Migration executor is shut down");
+                    }
+                    try {
+                        // block the submitting thread until a queue slot becomes available, rather than
+                        // failing due to temporary queue saturation.
+                        rejectedExecutor.getQueue().put(task);
+                        if (rejectedExecutor.isShutdown() && rejectedExecutor.getQueue().remove(task)) {
+                            throw new RejectedExecutionException("Migration executor is shut down");
+                        }
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        throw new RejectedExecutionException("Interrupted while waiting to submit migration", e);
+                    }
+                });
         this.statusWriter = statusWriter;
         this.migration = migration;
         this.retry = retry;
@@ -49,18 +62,13 @@ final class MigrationCoordinator {
     /** Submits IDs incrementally and waits for all accepted tasks to finish. */
     MigrationSummary run(final Collection<UUID> ids, final int inputCount, final int skippedCount) {
         for (final UUID id : ids) {
-            if (!acquireCapacity()) {
-                break;
-            }
             if (stopping.get() || fatalFailure.get() != null) {
-                capacity.release();
                 break;
             }
             try {
                 executor.execute(() -> migrate(id));
                 submitted.incrementAndGet();
             } catch (RuntimeException e) {
-                capacity.release();
                 if (!stopping.get()) {
                     failFatally(e);
                 }
@@ -81,27 +89,12 @@ final class MigrationCoordinator {
         executor.shutdown();
         try {
             if (!executor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS)) {
-                executor.shutdownNow();
+                interruptQueuedTasks();
                 executor.awaitTermination(shutdownTimeout.toMillis(), TimeUnit.MILLISECONDS);
             }
         } catch (InterruptedException e) {
-            executor.shutdownNow();
+            interruptQueuedTasks();
             Thread.currentThread().interrupt();
-        }
-    }
-
-    private boolean acquireCapacity() {
-        try {
-            capacity.acquire();
-            if (stopping.get() || fatalFailure.get() != null) {
-                capacity.release();
-                return false;
-            }
-            return true;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            stop();
-            return false;
         }
     }
 
@@ -126,9 +119,12 @@ final class MigrationCoordinator {
             }
         } catch (RuntimeException e) {
             failFatally(e);
-        } finally {
-            capacity.release();
         }
+    }
+
+    private void interruptQueuedTasks() {
+        // Interrupts the tasks and adds them to the interrupted counter for reporting
+        interrupted.addAndGet(executor.shutdownNow().size());
     }
 
     private void awaitCompletion() {
