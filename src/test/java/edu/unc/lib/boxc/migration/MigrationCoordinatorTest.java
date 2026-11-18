@@ -27,7 +27,7 @@ class MigrationCoordinatorTest {
         final Path failures = Files.createFile(tempDir.resolve("failures.log"));
         final AtomicInteger active = new AtomicInteger();
         final AtomicInteger peak = new AtomicInteger();
-        final List<UUID> ids = List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        final List<ObjectId> ids = ids(4);
         final MigrationAttempt attempt = id -> {
             peak.accumulateAndGet(active.incrementAndGet(), Math::max);
             try {
@@ -37,7 +37,7 @@ class MigrationCoordinatorTest {
             } finally {
                 active.decrementAndGet();
             }
-            return new MigrationResult(id, !id.equals(ids.get(1)), MigrationResult.FailureStage.SIDELOAD,
+            return new MigrationResult(id.uuid(), !id.equals(ids.get(1)), MigrationResult.FailureStage.SIDELOAD,
                     "result", false);
         };
 
@@ -56,12 +56,12 @@ class MigrationCoordinatorTest {
     void removesFailureForSuccessfulRetry() throws Exception {
         final Path progress = Files.createFile(tempDir.resolve("progress.log"));
         final Path failures = Files.createFile(tempDir.resolve("failures.log"));
-        final UUID id = UUID.randomUUID();
+        final ObjectId id = objectId();
         Files.writeString(progress, id + System.lineSeparator());
         Files.writeString(failures, id + System.lineSeparator());
 
         final MigrationCoordinator.MigrationSummary summary = new MigrationCoordinator(config(1),
-                new StatusWriter(progress, failures), value -> new MigrationResult(value, true, null, "ok", false), true)
+                new StatusWriter(progress, failures), value -> new MigrationResult(value.uuid(), true, null, "ok", false), true)
                 .run(List.of(id), 1, 0);
 
         assertEquals(1, summary.succeeded());
@@ -72,7 +72,7 @@ class MigrationCoordinatorTest {
     void blocksSubmissionUntilBoundedQueueCapacityIsAvailable() throws Exception {
         final Path progress = Files.createFile(tempDir.resolve("progress.log"));
         final Path failures = Files.createFile(tempDir.resolve("failures.log"));
-        final List<UUID> ids = List.of(UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID());
+        final List<ObjectId> ids = ids(4);
         final CountDownLatch started = new CountDownLatch(1);
         final CountDownLatch release = new CountDownLatch(1);
         final MigrationAttempt attempt = id -> {
@@ -84,7 +84,7 @@ class MigrationCoordinatorTest {
                     Thread.currentThread().interrupt();
                 }
             }
-            return new MigrationResult(id, true, null, "ok", false);
+            return new MigrationResult(id.uuid(), true, null, "ok", false);
         };
 
         try (var executor = Executors.newSingleThreadExecutor()) {
@@ -105,7 +105,7 @@ class MigrationCoordinatorTest {
     void shutdownRecordsTerminalResultFromInterruptedAttempt() throws Exception {
         final Path progress = Files.createFile(tempDir.resolve("progress.log"));
         final Path failures = Files.createFile(tempDir.resolve("failures.log"));
-        final UUID id = UUID.randomUUID();
+        final ObjectId id = objectId();
         final CountDownLatch started = new CountDownLatch(1);
         final MigrationAttempt attempt = value -> {
             started.countDown();
@@ -114,13 +114,13 @@ class MigrationCoordinatorTest {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            return new MigrationResult(value, true, null, "interrupted", false);
+            return new MigrationResult(value.uuid(), true, null, "interrupted", false);
         };
         final MigrationCoordinator coordinator = new MigrationCoordinator(config(1), new StatusWriter(progress, failures),
                 attempt, false);
         try (var executor = Executors.newSingleThreadExecutor()) {
             final Future<MigrationCoordinator.MigrationSummary> result = executor.submit(
-                    () -> coordinator.run(List.of(id, UUID.randomUUID()), 2, 0));
+                    () -> coordinator.run(List.of(id, objectId()), 2, 0));
             started.await();
             coordinator.stop();
 
@@ -140,5 +140,13 @@ class MigrationCoordinatorTest {
         properties.setProperty(MigrationConfig.WORKER_COUNT, Integer.toString(workers));
         properties.setProperty(MigrationConfig.SHUTDOWN_TIMEOUT_SECONDS, "1");
         return MigrationConfig.fromProperties(properties);
+    }
+
+    private static ObjectId objectId() {
+        return new ObjectId(UUID.randomUUID(), false);
+    }
+
+    private static List<ObjectId> ids(final int count) {
+        return java.util.stream.Stream.generate(MigrationCoordinatorTest::objectId).limit(count).toList();
     }
 }

@@ -1,13 +1,11 @@
 package edu.unc.lib.boxc.migration;
 
-import java.util.UUID;
-
 /** Performs one complete migration attempt. */
 @FunctionalInterface
 interface MigrationAttempt {
     /**
-     * @param id object UUID
+     * @param id object identifier
      * @return terminal migration result
      */
-    MigrationResult migrate(UUID id);
+    MigrationResult migrate(ObjectId id);
 }

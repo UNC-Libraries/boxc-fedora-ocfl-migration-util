@@ -10,7 +10,6 @@ import picocli.CommandLine.Option;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.Callable;
 
 /**
@@ -31,7 +30,7 @@ public class Main implements Callable<Integer> {
             description = "Run working directory. Default: ${DEFAULT-VALUE}")
     private Path workingDirectory;
 
-    @Option(names = "--id-list-path", description = "Source UUID list for a new run")
+    @Option(names = "--id-list-path", description = "Source object identifier list for a new run")
     private Path idListPath;
 
     @Option(names = "--config-path", description = "Migration properties file for a new run")
@@ -50,8 +49,8 @@ public class Main implements Callable<Integer> {
 
         try (RunDirectory runDirectory = RunDirectory.open(resolvedWorkingDirectory, idListPath, configPath,
                 workerCount, fromFailures)) {
-            final Set<UUID> progress = ObjectIdSource.readStatus(runDirectory.progressPath());
-            final Set<UUID> ids = fromFailures
+            final Set<ObjectId> progress = ObjectIdSource.readStatus(runDirectory.progressPath());
+            final Set<ObjectId> ids = fromFailures
                     ? ObjectIdSource.readStatus(runDirectory.failurePath())
                     : ObjectIdSource.readInput(runDirectory.idsPath());
             final int inputCount = ids.size();

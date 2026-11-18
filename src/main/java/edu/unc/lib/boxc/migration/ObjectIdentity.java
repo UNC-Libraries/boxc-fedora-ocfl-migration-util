@@ -20,8 +20,15 @@ record ObjectIdentity(UUID id, String fedoraPath, String internalId, URI sourceU
                       String ocflDigest) {
     /** Creates the identity using normalized Fedora repository roots. */
     static ObjectIdentity from(final UUID id, final URI sourceBaseUri, final URI targetBaseUri) {
+        return from(new ObjectId(id, false), sourceBaseUri, targetBaseUri);
+    }
+
+    /** Creates the identity for a content object or deposit record. */
+    static ObjectIdentity from(final ObjectId objectId, final URI sourceBaseUri, final URI targetBaseUri) {
+        final UUID id = objectId.uuid();
         final String value = id.toString();
-        final String fedoraPath = "content/" + value.substring(0, 2) + "/" + value.substring(2, 4) + "/"
+        final String container = objectId.deposit() ? "deposits" : "content";
+        final String fedoraPath = container + "/" + value.substring(0, 2) + "/" + value.substring(2, 4) + "/"
                 + value.substring(4, 6) + "/" + value.substring(6, 8) + "/" + value;
         final String internalId = "info:fedora/" + fedoraPath;
         return new ObjectIdentity(id, fedoraPath, internalId, resolveRepositoryPath(sourceBaseUri, fedoraPath),
@@ -39,8 +46,8 @@ record ObjectIdentity(UUID id, String fedoraPath, String internalId, URI sourceU
                 .resolve(ocflDigest.substring(6, 9)).resolve(ocflDigest);
     }
 
-    /** Returns the Fedora content root that contains migrated archival groups. */
+    /** Returns the Fedora container root that contains the migrated object. */
     String parentInternalId() {
-        return "info:fedora/content";
+        return internalId.substring(0, internalId.indexOf('/', "info:fedora/".length()));
     }
 }

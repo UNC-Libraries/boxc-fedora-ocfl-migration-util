@@ -5,18 +5,17 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.UUID;
 
 /**
- * Reads UUID inputs and status logs using the migration run format.
+ * Reads object identifiers and status logs using the migration run format.
  */
 final class ObjectIdSource {
     private ObjectIdSource() {
     }
 
-    /** Reads unique UUIDs from a user-provided input list, ignoring blank lines. */
-    static Set<UUID> readInput(final Path path) throws IOException {
-        final Set<UUID> ids = new LinkedHashSet<>();
+    /** Reads unique object identifiers from a user-provided input list, ignoring blank lines. */
+    static Set<ObjectId> readInput(final Path path) throws IOException {
+        final Set<ObjectId> ids = new LinkedHashSet<>();
         try (var lines = Files.lines(path)) {
             final var iterator = lines.iterator();
             int lineNumber = 0;
@@ -31,18 +30,18 @@ final class ObjectIdSource {
         return ids;
     }
 
-    /** Reads canonical UUIDs from a migration status log. */
-    static Set<UUID> readStatus(final Path path) throws IOException {
-        final Set<UUID> ids = new LinkedHashSet<>();
+    /** Reads canonical object identifiers from a migration status log. */
+    static Set<ObjectId> readStatus(final Path path) throws IOException {
+        final Set<ObjectId> ids = new LinkedHashSet<>();
         try (var lines = Files.lines(path)) {
             final var iterator = lines.iterator();
             int lineNumber = 0;
             while (iterator.hasNext()) {
                 lineNumber++;
                 final String line = iterator.next();
-                final UUID id = parse(line, path, lineNumber);
+                final ObjectId id = parse(line, path, lineNumber);
                 if (!line.equals(id.toString())) {
-                    throw new IllegalArgumentException("Non-canonical UUID in " + path + " line " + lineNumber);
+                    throw new IllegalArgumentException("Non-canonical object identifier in " + path + " line " + lineNumber);
                 }
                 ids.add(id);
             }
@@ -50,11 +49,11 @@ final class ObjectIdSource {
         return ids;
     }
 
-    private static UUID parse(final String value, final Path path, final int lineNumber) {
+    private static ObjectId parse(final String value, final Path path, final int lineNumber) {
         try {
-            return UUID.fromString(value);
+            return ObjectId.parse(value);
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid UUID in " + path + " line " + lineNumber, e);
+            throw new IllegalArgumentException("Invalid object identifier in " + path + " line " + lineNumber, e);
         }
     }
 }
