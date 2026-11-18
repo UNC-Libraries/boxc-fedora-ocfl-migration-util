@@ -31,9 +31,7 @@ The import/export fork and this application force
 
 ## Run Configuration
 
-Initialize a run with `--id-list-path` and `--config-path`; later invocations
-of the same working directory resume from its copied inputs. The configuration
-file contains the live OCFL root and Fedora credentials:
+The configuration file contains the live OCFL root and Fedora credentials:
 
 ```properties
 fedora_ocfl_root_dir=/srv/fedora/ocfl-root
@@ -50,3 +48,46 @@ shutdown_timeout_seconds=300
 The live OCFL root must already be a writable directory. The run directory
 contains the copied inputs, status logs, lock, and future export/upgrade
 workspace; do not edit those files while a run is active.
+
+## Usage
+
+Build the executable JAR with `mvn package`, then use
+`target/boxc-fedora-ocfl-migration.jar`.
+
+### Initialize a new project
+
+Create an ID list with one Fedora archival-group ID per line, then start a new
+run by specifying an empty or new working directory and both source inputs:
+
+```sh
+java -jar target/boxc-fedora-ocfl-migration.jar \
+  --id-list-path /var/migrations/ids.txt \
+  --config-path /var/migrations/migration.properties
+```
+
+The utility copies the ID list and configuration into the working directory.
+Those copies are the inputs for every later invocation of that run.
+
+### Resume an interrupted run
+
+After an interruption, rerun the command with the same working directory and
+without `--id-list-path` or `--config-path`:
+
+```sh
+java -jar target/boxc-fedora-ocfl-migration.jar
+```
+
+Completed and failed IDs are recorded in `migration_progress.log`, so this
+resumes only IDs that have not yet been attempted.
+
+### Retry failed items
+
+To retry only IDs currently recorded in `migration_failure.log`, resume the
+same working directory with `--from-failures`:
+
+```sh
+java -jar target/boxc-fedora-ocfl-migration.jar \
+  --from-failures
+```
+
+Successfully retried IDs are removed from `migration_failure.log`.
