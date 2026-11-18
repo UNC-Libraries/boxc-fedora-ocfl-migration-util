@@ -44,18 +44,22 @@ final class ObjectMigrationService implements AutoCloseable, MigrationAttempt {
     }
 
     /** Runs one complete object attempt and reports its terminal result. */
-    @Override
     public MigrationResult migrate(final UUID id) {
+        return migrate(new ObjectId(id, false));
+    }
+
+    @Override
+    public MigrationResult migrate(final ObjectId id) {
         final ObjectIdentity identity = ObjectIdentity.from(id, config.fedora5BaseUri(), config.fedora6BaseUri());
         Path exportDirectory = null;
         OcflPromoter.Promotion promotion = null;
         MigrationResult result;
         // Export from Fedora 5
         try {
-            exportDirectory = Files.createTempDirectory(exportsDirectory, id + "-");
+            exportDirectory = Files.createTempDirectory(exportsDirectory, id.uuid() + "-");
             exporter.export(identity, exportDirectory);
         } catch (Exception e) {
-            result = failure(id, MigrationResult.FailureStage.EXPORT, e, false);
+            result = failure(id.uuid(), MigrationResult.FailureStage.EXPORT, e, false);
             return cleanup(result, exportDirectory, identity, null);
         }
 
@@ -63,7 +67,7 @@ final class ObjectMigrationService implements AutoCloseable, MigrationAttempt {
         try {
             upgrader.migrate(identity, exportDirectory);
         } catch (Exception e) {
-            result = failure(id, MigrationResult.FailureStage.UPGRADE, e, false);
+            result = failure(id.uuid(), MigrationResult.FailureStage.UPGRADE, e, false);
             return cleanup(result, exportDirectory, identity, null);
         }
 
@@ -71,14 +75,14 @@ final class ObjectMigrationService implements AutoCloseable, MigrationAttempt {
         try {
             promotion = promoter.promote(identity, stagingRoot, config.ocflRoot());
         } catch (Exception e) {
-            result = failure(id, MigrationResult.FailureStage.PROMOTION, e, false);
+            result = failure(id.uuid(), MigrationResult.FailureStage.PROMOTION, e, false);
             return cleanup(result, exportDirectory, identity, promotion);
         }
 
         // Sideload the object in Fedora 6 to trigger indexing, then make sure it is available
         try {
             target.sideloadAndVerify(identity);
-            result = new MigrationResult(id, true, null, "Migrated", promotion.placedLiveObject());
+            result = new MigrationResult(id.uuid(), true, null, "Migrated", promotion.placedLiveObject());
         } catch (TargetRepositoryException e) {
             if (e.rejected() && promotion.placedLiveObject()) {
                 try {
@@ -87,7 +91,7 @@ final class ObjectMigrationService implements AutoCloseable, MigrationAttempt {
                     e.addSuppressed(cleanupFailure);
                 }
             }
-            result = failure(id, e.failureStage(), e, promotion.placedLiveObject());
+            result = failure(id.uuid(), e.failureStage(), e, promotion.placedLiveObject());
         }
         return cleanup(result, exportDirectory, identity, promotion);
     }

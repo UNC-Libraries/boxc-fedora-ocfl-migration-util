@@ -14,7 +14,6 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.Set;
-import java.util.UUID;
 
 /**
  * Owns an initialized run directory and its exclusive lock.
@@ -206,10 +205,10 @@ final class RunDirectory implements AutoCloseable {
     }
 
     private void validateStatusFiles() throws IOException {
-        final Set<UUID> progress = ObjectIdSource.readStatus(progressPath);
-        final Set<UUID> failures = ObjectIdSource.readStatus(failurePath);
+        final Set<ObjectId> progress = ObjectIdSource.readStatus(progressPath);
+        final Set<ObjectId> failures = ObjectIdSource.readStatus(failurePath);
         if (!progress.containsAll(failures)) {
-            throw new IllegalStateException("Failure status contains UUIDs absent from progress status");
+            throw new IllegalStateException("Failure status contains object identifiers absent from progress status");
         }
     }
 

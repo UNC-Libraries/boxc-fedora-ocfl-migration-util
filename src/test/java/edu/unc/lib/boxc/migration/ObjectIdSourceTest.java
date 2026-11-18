@@ -8,6 +8,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ObjectIdSourceTest {
     @TempDir
@@ -33,5 +34,16 @@ class ObjectIdSourceTest {
         final Path status = tempDir.resolve("status.log");
         Files.writeString(status, "3F7510BC-7F53-4AE2-B8FC-0FB4CCD95DBB\n");
         assertThrows(IllegalArgumentException.class, () -> ObjectIdSource.readStatus(status));
+    }
+
+    @Test
+    void preservesDepositPrefix() throws Exception {
+        final Path ids = tempDir.resolve("ids.txt");
+        Files.writeString(ids, "deposits/56fd7c53-f152-40ab-ad56-5ddb9e52dc40\n");
+
+        final ObjectId id = ObjectIdSource.readInput(ids).iterator().next();
+
+        assertEquals("deposits/56fd7c53-f152-40ab-ad56-5ddb9e52dc40", id.toString());
+        assertTrue(id.deposit());
     }
 }

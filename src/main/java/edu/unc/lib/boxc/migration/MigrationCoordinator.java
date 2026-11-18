@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -60,8 +59,8 @@ final class MigrationCoordinator {
     }
 
     /** Submits IDs incrementally and waits for all accepted tasks to finish. */
-    MigrationSummary run(final Collection<UUID> ids, final int inputCount, final int skippedCount) {
-        for (final UUID id : ids) {
+    MigrationSummary run(final Collection<ObjectId> ids, final int inputCount, final int skippedCount) {
+        for (final ObjectId id : ids) {
             if (stopping.get() || fatalFailure.get() != null) {
                 break;
             }
@@ -98,7 +97,7 @@ final class MigrationCoordinator {
         }
     }
 
-    private void migrate(final UUID id) {
+    private void migrate(final ObjectId id) {
         try {
             if (stopping.get()) {
                 interrupted.incrementAndGet();
