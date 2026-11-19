@@ -11,6 +11,7 @@ import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,32 +53,35 @@ final class FedoraTargetRepository implements TargetRepository {
     public void sideloadAndVerify(final ObjectIdentity identity) throws TargetRepositoryException {
         final URI resource = identity.targetUri();
         for (int retry = 0; ; retry++) {
+            final int status;
             try (CloseableHttpResponse response = client.execute(new HttpPost(resource + "/fcr:reindex"))) {
-                final int status = response.getStatusLine().getStatusCode();
+                status = response.getStatusLine().getStatusCode();
                 if (status == 204) {
                     break;
                 }
-                if (status >= 500 && retry < SIDELOAD_RETRIES) {
-                    log.warn("Sideload returned HTTP {}; retrying {}/{} for {}", status, retry + 1, SIDELOAD_RETRIES,
-                            resource);
-                    try {
-                        Thread.sleep(SIDELOAD_RETRY_DELAY_MILLIS);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        throw new TargetRepositoryException("Sideload retry interrupted for " + resource,
-                                MigrationResult.FailureStage.SIDELOAD, e);
+                // Error response but not retryable, or no retries left
+                if (status < 500 || retry == SIDELOAD_RETRIES) {
+                    final String detail = responseDetail(response.getEntity());
+                    if (status >= 400 && status < 500) {
+                        throw new TargetRepositoryException("Sideload rejected with HTTP " + status + detail,
+                                MigrationResult.FailureStage.SIDELOAD, true);
                     }
-                    continue;
+                    throw new TargetRepositoryException("Unexpected sideload response HTTP " + status + detail,
+                            MigrationResult.FailureStage.SIDELOAD, false);
                 }
-                final String detail = responseDetail(response.getEntity());
-                if (status >= 400 && status < 500) {
-                    throw new TargetRepositoryException("Sideload rejected with HTTP " + status + detail,
-                            MigrationResult.FailureStage.SIDELOAD, true);
-                }
-                throw new TargetRepositoryException("Unexpected sideload response HTTP " + status + detail,
-                        MigrationResult.FailureStage.SIDELOAD, false);
+                // Consume the response before retrying
+                EntityUtils.consume(response.getEntity());
             } catch (IOException e) {
                 throw new TargetRepositoryException("Sideload request failed for " + resource,
+                        MigrationResult.FailureStage.SIDELOAD, e);
+            }
+            log.warn("Sideload returned HTTP {}; retrying {}/{} for {}", status, retry + 1, SIDELOAD_RETRIES,
+                    resource);
+            try {
+                Thread.sleep(SIDELOAD_RETRY_DELAY_MILLIS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new TargetRepositoryException("Sideload retry interrupted for " + resource,
                         MigrationResult.FailureStage.SIDELOAD, e);
             }
         }
