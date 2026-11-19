@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -20,6 +21,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class MigrationCoordinatorTest {
     @TempDir
     private Path tempDir;
+
+    @Test
+    void formatsDurationsAsPlainSeconds() {
+        assertEquals("1.008s", MigrationCoordinator.formatDuration(Duration.ofNanos(1_008_094_235)));
+        assertEquals("1s", MigrationCoordinator.formatDuration(Duration.ofSeconds(1)));
+    }
 
     @Test
     void limitsWorkersAndRecordsTerminalResults() throws Exception {
@@ -48,6 +55,8 @@ class MigrationCoordinatorTest {
         assertEquals(4, summary.attempted());
         assertEquals(3, summary.succeeded());
         assertEquals(1, summary.failed());
+        assertTrue(summary.averageMigrationDuration().compareTo(Duration.ZERO) > 0);
+        assertTrue(summary.totalMigrationDuration().compareTo(Duration.ZERO) > 0);
         assertEquals(ids.get(1) + System.lineSeparator(), Files.readString(failures));
         assertEquals(4, ObjectIdSource.readStatus(progress).size());
     }
