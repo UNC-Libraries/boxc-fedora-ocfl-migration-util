@@ -62,6 +62,7 @@ final class MigrationCoordinator {
 
     /** Submits IDs incrementally and waits for all accepted tasks to finish. */
     MigrationSummary run(final Collection<ObjectId> ids, final int inputCount, final int skippedCount) {
+        final long startedAt = System.nanoTime();
         for (final ObjectId id : ids) {
             if (stopping.get() || fatalFailure.get() != null) {
                 break;
@@ -80,7 +81,7 @@ final class MigrationCoordinator {
         final int notSubmitted = Math.max(0, ids.size() - submitted.get());
         return new MigrationSummary(inputCount, skippedCount, attempted.get(), succeeded.get(), failed.get(),
                 interrupted.get() + notSubmitted, fatalFailure.get() != null || stopping.get(),
-                averageMigrationDuration());
+                averageMigrationDuration(), Duration.ofNanos(System.nanoTime() - startedAt));
     }
 
     /** Stops new work, gives active tasks time to clean up, then interrupts remaining tasks. */
@@ -119,7 +120,7 @@ final class MigrationCoordinator {
                 }
                 final Duration duration = Duration.ofNanos(System.nanoTime() - startedAt);
                 totalMigrationNanos.addAndGet(duration.toNanos());
-                log.info("Migration of object {} completed in {}", id, duration);
+                log.info("Migration of object {} completed in {}", id, formatDuration(duration));
             } catch (IOException e) {
                 failFatally(e);
             }
@@ -162,6 +163,13 @@ final class MigrationCoordinator {
         return completed == 0 ? Duration.ZERO : Duration.ofNanos(totalMigrationNanos.get() / completed);
     }
 
+    static String formatDuration(final Duration duration) {
+        if (duration.toMillisPart() == 0) {
+            return duration.toSeconds() + "s";
+        }
+        return "%d.%03ds".formatted(duration.toSeconds(), duration.toMillisPart()).replaceFirst("0+(?=s$)", "");
+    }
+
     /**
      * Summarizes a coordinator invocation for console reporting and exit-code mapping.
      *
@@ -173,8 +181,9 @@ final class MigrationCoordinator {
      * @param interrupted IDs interrupted or not submitted during shutdown
      * @param aborted whether a fatal failure or shutdown stopped the run
      * @param averageMigrationDuration average duration of terminal migration attempts
+     * @param totalMigrationDuration elapsed duration of the full migration run
      */
     record MigrationSummary(int input, int skipped, int attempted, int succeeded, int failed, int interrupted,
-                             boolean aborted, Duration averageMigrationDuration) {
+                             boolean aborted, Duration averageMigrationDuration, Duration totalMigrationDuration) {
     }
 }

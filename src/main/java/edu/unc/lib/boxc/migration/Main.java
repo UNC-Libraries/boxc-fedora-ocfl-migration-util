@@ -77,9 +77,10 @@ public class Main implements Callable<Integer> {
                     }
                 }
                 log.info("Migration summary: input={}, skipped={}, attempted={}, succeeded={}, failed={}, interrupted={}, "
-                                + "average migration duration={}",
+                                + "average migration duration={}, total migration duration={}",
                         summary.input(), summary.skipped(), summary.attempted(), summary.succeeded(), summary.failed(),
-                        summary.interrupted(), summary.averageMigrationDuration());
+                        summary.interrupted(), MigrationCoordinator.formatDuration(summary.averageMigrationDuration()),
+                        MigrationCoordinator.formatDuration(summary.totalMigrationDuration()));
                 if (summary.aborted() || !ObjectIdSource.readStatus(runDirectory.failurePath()).isEmpty()) {
                     return 1;
                 }

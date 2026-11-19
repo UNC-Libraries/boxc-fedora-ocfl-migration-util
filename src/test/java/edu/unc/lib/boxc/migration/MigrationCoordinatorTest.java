@@ -23,6 +23,12 @@ class MigrationCoordinatorTest {
     private Path tempDir;
 
     @Test
+    void formatsDurationsAsPlainSeconds() {
+        assertEquals("1.008s", MigrationCoordinator.formatDuration(Duration.ofNanos(1_008_094_235)));
+        assertEquals("1s", MigrationCoordinator.formatDuration(Duration.ofSeconds(1)));
+    }
+
+    @Test
     void limitsWorkersAndRecordsTerminalResults() throws Exception {
         final Path progress = Files.createFile(tempDir.resolve("progress.log"));
         final Path failures = Files.createFile(tempDir.resolve("failures.log"));
@@ -50,6 +56,7 @@ class MigrationCoordinatorTest {
         assertEquals(3, summary.succeeded());
         assertEquals(1, summary.failed());
         assertTrue(summary.averageMigrationDuration().compareTo(Duration.ZERO) > 0);
+        assertTrue(summary.totalMigrationDuration().compareTo(Duration.ZERO) > 0);
         assertEquals(ids.get(1) + System.lineSeparator(), Files.readString(failures));
         assertEquals(4, ObjectIdSource.readStatus(progress).size());
     }
