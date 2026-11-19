@@ -1,5 +1,7 @@
 package edu.unc.lib.boxc.migration;
 
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.joran.JoranConfigurator;
 import org.fcrepo.importexport.common.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,6 +11,7 @@ import picocli.CommandLine.Option;
 
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
@@ -21,10 +24,7 @@ import java.util.concurrent.Callable;
         mixinStandardHelpOptions = true,
         version = "1.0-SNAPSHOT")
 public class Main implements Callable<Integer> {
-
-    private static final Logger log = LoggerFactory.getLogger(Main.class);
-
-    static final String LOG_PATH_PROPERTY = "migration.log.path";
+    private static final String LOG_DIRECTORY_PROPERTY = "migration.run.directory";
 
     @Option(names = "--working-dir", defaultValue = ".",
             description = "Run working directory. Default: ${DEFAULT-VALUE}")
@@ -45,10 +45,11 @@ public class Main implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         final Path resolvedWorkingDirectory = workingDirectory.toAbsolutePath().normalize();
-        System.setProperty(LOG_PATH_PROPERTY, resolvedWorkingDirectory.resolve("migration.log").toString());
 
         try (RunDirectory runDirectory = RunDirectory.open(resolvedWorkingDirectory, idListPath, configPath,
                 workerCount, fromFailures)) {
+            configureLogging(runDirectory.path());
+            final Logger log = LoggerFactory.getLogger(Main.class);
             final Set<ObjectId> progress = ObjectIdSource.readStatus(runDirectory.progressPath());
             final Set<ObjectId> ids = fromFailures
                     ? ObjectIdSource.readStatus(runDirectory.failurePath())
@@ -85,6 +86,16 @@ public class Main implements Callable<Integer> {
             }
         }
         return 0;
+    }
+
+    // Reload the logger to ensure that they are written to the working directory
+    private static void configureLogging(final Path runDirectory) throws Exception {
+        final LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        final JoranConfigurator configurator = new JoranConfigurator();
+        context.reset();
+        context.putProperty(LOG_DIRECTORY_PROPERTY, runDirectory.toString());
+        configurator.setContext(context);
+        configurator.doConfigure(Objects.requireNonNull(Main.class.getResource("/logback.xml")));
     }
 
     /**

@@ -31,8 +31,8 @@ class MainTest {
 
         assertEquals(0, exitCode);
         assertTrue(Files.isDirectory(workingDirectory));
-        assertEquals(workingDirectory.resolve("migration.log").toString(),
-                System.getProperty(Main.LOG_PATH_PROPERTY));
+        assertTrue(Files.exists(workingDirectory.resolve("migration.log")));
+        assertTrue(Files.exists(workingDirectory.resolve("fcrepo.log")));
         assertTrue(Files.exists(workingDirectory.resolve(RunDirectory.PROPERTIES_FILE)));
     }
 
