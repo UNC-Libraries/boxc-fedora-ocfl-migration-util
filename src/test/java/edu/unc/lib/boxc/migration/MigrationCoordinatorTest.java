@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
@@ -48,6 +49,7 @@ class MigrationCoordinatorTest {
         assertEquals(4, summary.attempted());
         assertEquals(3, summary.succeeded());
         assertEquals(1, summary.failed());
+        assertTrue(summary.averageMigrationDuration().compareTo(Duration.ZERO) > 0);
         assertEquals(ids.get(1) + System.lineSeparator(), Files.readString(failures));
         assertEquals(4, ObjectIdSource.readStatus(progress).size());
     }

@@ -12,6 +12,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Coordinates bounded concurrent object migrations and durable result recording. */
@@ -30,6 +31,7 @@ final class MigrationCoordinator {
     private final AtomicInteger succeeded = new AtomicInteger();
     private final AtomicInteger failed = new AtomicInteger();
     private final AtomicInteger interrupted = new AtomicInteger();
+    private final AtomicLong totalMigrationNanos = new AtomicLong();
 
     /** Creates a coordinator with a queue sized to twice the worker count. */
     MigrationCoordinator(final MigrationConfig config, final StatusWriter statusWriter, final MigrationAttempt migration,
@@ -77,7 +79,8 @@ final class MigrationCoordinator {
         awaitCompletion();
         final int notSubmitted = Math.max(0, ids.size() - submitted.get());
         return new MigrationSummary(inputCount, skippedCount, attempted.get(), succeeded.get(), failed.get(),
-                interrupted.get() + notSubmitted, fatalFailure.get() != null || stopping.get());
+                interrupted.get() + notSubmitted, fatalFailure.get() != null || stopping.get(),
+                averageMigrationDuration());
     }
 
     /** Stops new work, gives active tasks time to clean up, then interrupts remaining tasks. */
@@ -104,6 +107,7 @@ final class MigrationCoordinator {
                 return;
             }
             attempted.incrementAndGet();
+            final long startedAt = System.nanoTime();
             final MigrationResult result = migration.migrate(id);
             try {
                 if (result.success()) {
@@ -113,6 +117,9 @@ final class MigrationCoordinator {
                     statusWriter.recordFailure(id, retry);
                     failed.incrementAndGet();
                 }
+                final Duration duration = Duration.ofNanos(System.nanoTime() - startedAt);
+                totalMigrationNanos.addAndGet(duration.toNanos());
+                log.info("Migration of object {} completed in {}", id, duration);
             } catch (IOException e) {
                 failFatally(e);
             }
@@ -150,6 +157,11 @@ final class MigrationCoordinator {
         }
     }
 
+    private Duration averageMigrationDuration() {
+        final int completed = succeeded.get() + failed.get();
+        return completed == 0 ? Duration.ZERO : Duration.ofNanos(totalMigrationNanos.get() / completed);
+    }
+
     /**
      * Summarizes a coordinator invocation for console reporting and exit-code mapping.
      *
@@ -160,8 +172,9 @@ final class MigrationCoordinator {
      * @param failed attempts durably recorded as failures
      * @param interrupted IDs interrupted or not submitted during shutdown
      * @param aborted whether a fatal failure or shutdown stopped the run
+     * @param averageMigrationDuration average duration of terminal migration attempts
      */
     record MigrationSummary(int input, int skipped, int attempted, int succeeded, int failed, int interrupted,
-                            boolean aborted) {
+                             boolean aborted, Duration averageMigrationDuration) {
     }
 }
