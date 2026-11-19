@@ -14,6 +14,7 @@ import java.util.Properties;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.exactly;
 import static com.github.tomakehurst.wiremock.client.WireMock.head;
 import static com.github.tomakehurst.wiremock.client.WireMock.headRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
@@ -70,6 +71,28 @@ class FedoraTargetRepositoryTest {
         }
         assertEquals(MigrationResult.FailureStage.SIDELOAD, indeterminate.failureStage());
         assertFalse(indeterminate.rejected());
+        server.verify(exactly(6), postRequestedFor(urlEqualTo(resourcePath() + "/fcr:reindex")));
+    }
+
+    @Test
+    void retriesSideload5xxResponsesBeforeVerifying() throws Exception {
+        server.stubFor(post(urlEqualTo(resourcePath() + "/fcr:reindex"))
+                .inScenario("retry sideload")
+                .whenScenarioStateIs("Started")
+                .willSetStateTo("available")
+                .willReturn(aResponse().withStatus(500)));
+        server.stubFor(post(urlEqualTo(resourcePath() + "/fcr:reindex"))
+                .inScenario("retry sideload")
+                .whenScenarioStateIs("available")
+                .willReturn(aResponse().withStatus(204)));
+        server.stubFor(head(urlEqualTo(resourcePath())).willReturn(aResponse().withStatus(200)));
+
+        try (var target = new FedoraTargetRepository(config())) {
+            target.sideloadAndVerify(identity());
+        }
+
+        server.verify(exactly(2), postRequestedFor(urlEqualTo(resourcePath() + "/fcr:reindex")));
+        server.verify(headRequestedFor(urlEqualTo(resourcePath())));
     }
 
     @Test

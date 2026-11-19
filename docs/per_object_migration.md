@@ -217,9 +217,10 @@ For our specific example, it would be equivalent to:
 The migration utility will perform this using Apache HttpClient. A 204 response
 is expected if the operation was successful. A 4xx response is a definitive
 rejection, so the object should be removed from the Fedora 6 OCFL root and
-recorded as failed. A 5xx response or transport failure leaves the result
-indeterminate; retain the OCFL object, record the failure, and allow a later
-retry to repeat sideloading and verification.
+recorded as failed. A 5xx response is retried up to five times with a one-second
+delay. If all retries fail, or if a transport failure occurs, retain the OCFL
+object, record the failure, and allow a later retry to repeat sideloading and
+verification.
 
 Documentation reference: https://wiki.lyrasis.org/spaces/FEDORA7x/pages/416973104/RESTful+HTTP+API+-+Side+Loading
 
